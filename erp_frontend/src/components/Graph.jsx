@@ -54,7 +54,7 @@ export const data = {
 };
 
 function Graph() {
-  return <div className='w-[80%] mx-auto mt-8 flex justify-center'>
+  return <div className='w-[80%] min-h-[40vh] mx-auto mt-8 '>
     <Bar options={options} data={data} />
     </div>;
 }

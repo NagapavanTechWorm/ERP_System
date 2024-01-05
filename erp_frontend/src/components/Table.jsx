@@ -4,7 +4,7 @@ import { IoSearch } from "react-icons/io5";
 const Table = ({data, setFilter, filter, setData}) => {
   
   return (
-    <div className="overflow-x-auto border-2 rounded-md mx-10 my-10">
+    <div className="overflow-x-auto border-2 align-elements rounded-md mx-auto my-10">
       <div className='m-6 flex flex-wrap gap-3'>
         <div className="flex flex-col gap-3">
           <h1 className='text-3xl font-bold text-sky-500'>Attendance Report</h1>
