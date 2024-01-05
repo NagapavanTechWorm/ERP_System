@@ -1,30 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IoSearch } from "react-icons/io5";
 
-const Table = () => {
-  const data = [
-    {
-      name:"Rishi",
-      usn:"1AR21CS036",
-      branch:"CSE",
-      sem:"5th",
-      status:"present"
-    },
-    {
-      name:"Nagapavan A",
-      usn:"1AR21CS029",
-      branch:"CSE",
-      sem:"5th",
-      status:"absent"
-    },
-    {
-      name:"Rudresh P",
-      usn:"1AR21CS038",
-      branch:"CSE",
-      sem:"5th",
-      status:"granted"
-    },
-  ];
+const Table = ({data, setFilter, filter, setData}) => {
+  
   return (
     <div className="overflow-x-auto border-2 rounded-md mx-10 my-10">
       <div className='m-6 flex flex-wrap gap-3'>
@@ -37,10 +15,10 @@ const Table = () => {
         </div>
       
         <div className="self-center ml-auto flex gap-3 flex-wrap">
-          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${true?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`}>All Students</button>
-          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${false?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`}>Present</button>
-          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${false?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`}>Absentees</button>
-          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${false?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`}>Leave Granted</button>
+          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${filter == "allStudents"?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`} onClick={()=>{setFilter("allStudents")}}>All Students</button>
+          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${filter == "present"?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`} onClick={()=>{setFilter("present")}}>Present</button>
+          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${filter == "absent"?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`} onClick={()=>{setFilter("absent")}}>Absentees</button>
+          <button className={`rounded-md px-2 py-1 hover:scale-110 lg:text-lg h-min ${filter == "granted"?"bg-blue-500 text-white":"bg-blue-200 text-gray-400"}`} onClick={()=>{setFilter("granted")}}>Leave Granted</button>
         </div>
 
       </div>
@@ -58,15 +36,36 @@ const Table = () => {
         <tbody>
           {/* row 1 */}
           {data.map((item,index)=>{
-            return <tr>
+            return <tr key={index}>
             <th>{index+1}</th>
             <td>{item.name}</td>
             <td>{item.usn}</td>
             <td>{item.branch}/{item.sem}</td>
             <td className='flex justify-center gap-3'>
-              <button className={`px-3 hover:scale-110 rounded-md py-2 text-sm lg:text-lg text-white ${item.status =="present"?"bg-green-500 font-semibold":"bg-green-200 font-thin opacity-80"}`}>Present</button>
-              <button className={`px-3 hover:scale-110 rounded-md py-2 text-sm lg:text-lg text-white ${item.status =="absent"?"bg-red-400 font-semibold":"bg-red-200 font-thin opacity-80"}`}>Absent</button>
-              <button className={`px-3 hover:scale-110 rounded-md py-2 text-sm lg:text-lg text-white ${item.status =="granted"?"bg-yellow-400 font-semibold":"bg-yellow-200 font-thin opacity-80"}`}>Leave Granted</button>
+            <button
+                onClick={() => setData((prev) => {
+                  const newData = [...prev]; // Create a new array to avoid mutating the original state
+                  newData[index] = { ...newData[index], status: "present" }; // Update the status of the specific item
+                  return newData;
+                })}
+              className={`px-3 hover:scale-110 rounded-md py-2 text-sm lg:text-lg text-white ${item.status === "present" ? "bg-green-400 font-semibold" : "bg-green-200 font-thin opacity-80"}`}>Present</button>
+              
+              <button
+                onClick={() => setData((prev) => {
+                  const newData = [...prev]; // Create a new array to avoid mutating the original state
+                  newData[index] = { ...newData[index], status: "absent" }; // Update the status of the specific item
+                  return newData;
+                })}
+              className={`px-3 hover:scale-110 rounded-md py-2 text-sm lg:text-lg text-white ${item.status === "absent" ? "bg-red-400 font-semibold" : "bg-red-200 font-thin opacity-80"}`}>Absent</button>
+              
+              <button
+                onClick={() => setData((prev) => {
+                  const newData = [...prev]; // Create a new array to avoid mutating the original state
+                  newData[index] = { ...newData[index], status: "granted" }; // Update the status of the specific item
+                  return newData;
+                })}
+              className={`px-3 hover:scale-110 rounded-md py-2 text-sm lg:text-lg text-white ${item.status === "granted" ? "bg-yellow-400 font-semibold" : "bg-yellow-200 font-thin opacity-80"}`}>Leave Granted</button>
+
             </td>
           </tr>
           })}
