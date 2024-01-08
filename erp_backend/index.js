@@ -2,41 +2,83 @@ const fs = require('fs');
 const readline = require('readline');
 const ExcelJS = require('exceljs');
 
-// Path to your text file
-const filePath = "./data/user.dat";
-
-// Read data from the text file
-const readInterface = readline.createInterface({
-  input: fs.createReadStream(filePath),
-});
-
-const data = [];
-
-readInterface.on('line', function (line) {
-  // Assuming each line in the text file contains a name
-  const name = line.trim().replace(/^\d+\.\s*/, ''); // Remove the number and dot
-  data.push(name);
-});
-
-readInterface.on('close', function () {
-  // Create a workbook and add a worksheet
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Sheet 1');
-
-  // Add headers
-  worksheet.addRow(['ID', 'Name']);
-
-  // Add data to the worksheet
-  data.forEach((name, index) => {
-    worksheet.addRow([index + 1, name]);
-  });
-
-  // Save the workbook to a file
-  workbook.xlsx.writeFile('index.xlsx')
-    .then(() => {
-      console.log('Excel file created successfully!');
-    })
-    .catch((error) => {
-      console.error('Error:', error);
+// Function to process user.dat file and return a Promise
+function processUserDat(filePath) {
+  return new Promise((resolve, reject) => {
+    const readInterface = readline.createInterface({
+      input: fs.createReadStream(filePath),
     });
-});
+
+    const userData = [];
+
+    readInterface.on('line', function (line) {
+      const name = line.trim().replace(/^\d+\.\s*/, '');
+      userData.push(name);
+    });
+
+    readInterface.on('close', function () {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('UserSheet');
+
+      worksheet.addRow(['ID', 'Name']);
+
+      userData.forEach((name, index) => {
+        worksheet.addRow([index + 1, name]);
+      });
+
+      workbook.xlsx.writeFile('user.xlsx')
+        .then(() => {
+          console.log('User Excel file created successfully!');
+          resolve();
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          reject(error);
+        });
+    });
+  });
+}
+
+// Function to process login.dat file and return a Promise
+function processLoginDat(filePath) {
+  return new Promise((resolve, reject) => {
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const lines = rawData.trim().split('\n');
+
+    const loginData = [];
+
+    lines.forEach((line) => {
+      const [id, date, time] = line.trim().split(/\s+/);
+      loginData.push([id, date, time]);
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('LoginSheet');
+
+    worksheet.addRow(['ID', 'Date', 'Time']);
+
+    loginData.forEach((data) => {
+      worksheet.addRow(data);
+    });
+
+    workbook.xlsx.writeFile('login.xlsx')
+      .then(() => {
+        console.log('Login Excel file created successfully!');
+        resolve();
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        reject(error);
+      });
+  });
+}
+
+// Call the functions with their respective file paths
+const userFilePath = './data/user.dat';
+const loginFilePath = './data/login.dat';
+
+// Example usage of promises
+processUserDat(userFilePath)
+  .then(() => processLoginDat(loginFilePath))
+  .then(() => console.log('All files created successfully!'))
+  .catch((error) => console.error('Error:', error));
