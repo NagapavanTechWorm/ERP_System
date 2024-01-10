@@ -5,7 +5,6 @@ import ExcelJS from 'exceljs';
 
 const app = express();
 const PORT = 3000;
-var targetDate;
 
 app.get("/user", async (req, res) => {
   const userFilePath = './data/user.dat';
@@ -50,7 +49,7 @@ app.listen(PORT, () => {
 
 async function compareData() {
   const userFilePath = 'user.xlsx';
-  const loginFilePath = `login.xlsx`;
+  const loginFilePath = 'login.xlsx';
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -61,18 +60,25 @@ async function compareData() {
       const loginWorksheet = loginWorkbook.getWorksheet('LoginSheet');
 
       const userData = [];
+
       userWorksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
         if (rowNumber > 1) { // Skip header row
           const userId = row.values[1];
+          const userName = row.values[2];
           const status = findStatus(userId, loginWorksheet);
-          userData.push({ id: userId, status });
+          userData.push({ id: userId, name: userName, status });
           userWorksheet.getCell(`C${rowNumber}`).value = status;
         }
       });
 
-      await userWorkbook.xlsx.writeFile('user_updated.xlsx');
+      await userWorkbook.xlsx.writeFile('user_uped.xlsx');
 
-      resolve(userData);
+      const responseData = {
+        data: userData,
+        message: 'Comparison data retrieved successfully',
+      };
+
+      resolve(responseData);
     } catch (error) {
       console.error('Error:', error);
       reject(error);
