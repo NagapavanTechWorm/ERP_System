@@ -2,12 +2,15 @@ import express from "express";
 import processAllUserData from "./functions/processAllUserData.js"
 import compareData from "./functions/compareData.js";
 import { config } from 'dotenv';
+import CORSMiddleware from "./functions/Cors.js"
+
 config();
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use(CORSMiddleware);
 
 
 
