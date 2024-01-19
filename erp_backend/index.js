@@ -2,9 +2,12 @@ import express from "express";
 import fs from 'fs';
 import readline from 'readline';
 import ExcelJS from 'exceljs';
+import cors from "cors";
 
 const app = express();
 const PORT = 3000;
+
+app.use(cors());
 
 app.get("/user", async (req, res) => {
   const userFilePath = './data/user.dat';
@@ -18,27 +21,17 @@ app.get("/user", async (req, res) => {
   }
 });
 
-app.get("/login", async (req, res) => {
+app.get("/login-sms", async (req, res) => {
   const loginFilePath = './data/login.dat';
   const targetDate = '03-12-2023';
   const startTime = '20:00';
   const endTime = '22:00';
 
   try {
-    const loginData = await processLoginDat(loginFilePath, targetDate, startTime, endTime);
-    res.json(loginData);
+    const comparisonData = await compareData(loginFilePath, targetDate, startTime, endTime);
+    res.json(comparisonData.data);
   } catch (err) {
     console.error('Error processing login data:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-app.get("/sms", async (req, res) => {
-  try {
-    const comparisonData = await compareData();
-    res.json(comparisonData);
-  } catch (err) {
-    console.error('Error comparing data:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
@@ -47,14 +40,13 @@ app.listen(PORT, () => {
   console.log(`Server on PORT ${PORT}`);
 });
 
-async function compareData() {
+async function compareData(loginFilePath, targetDate, startTime, endTime) {
   const userFilePath = 'user.xlsx';
-  const loginFilePath = 'login.xlsx';
 
   return new Promise(async (resolve, reject) => {
     try {
       const userWorkbook = await readExcel(userFilePath);
-      const loginWorkbook = await readExcel(loginFilePath);
+      const loginWorkbook = await processLoginDat(loginFilePath, targetDate, startTime, endTime);
 
       const userWorksheet = userWorkbook.getWorksheet('UserSheet');
       const loginWorksheet = loginWorkbook.getWorksheet('LoginSheet');
@@ -86,6 +78,61 @@ async function compareData() {
   });
 }
 
+async function readExcel(filePath) {
+  return new Promise((resolve, reject) => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.xlsx.readFile(filePath)
+      .then(() => {
+        resolve(workbook);
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
+}
+
+async function processLoginDat(filePath, targetDate, startTime, endTime) {
+  return new Promise((resolve, reject) => {
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const lines = rawData.trim().split('\n');
+
+    const loginData = [];
+
+    lines.forEach((line) => {
+      const [id, date, time] = line.trim().split(/\s+/);
+      if (date === targetDate && isTimeInRange(time, startTime, endTime)) {
+        loginData.push({ id, date, time });
+      }
+    });
+
+    if (loginData.length === 0) {
+      console.log(`No data found for the specified date ${targetDate} and time range ${startTime} to ${endTime}`);
+      resolve([]);
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('LoginSheet');
+
+    worksheet.addRow(['ID', 'Date', 'Time']);
+
+    loginData.forEach((data) => {
+      worksheet.addRow(Object.values(data));
+      console.log(data);
+    });
+
+    workbook.xlsx.writeFile(`login.xlsx`)
+      .then(() => {
+        console.log(`Login Excel file for ${targetDate} created successfully!`);
+        resolve(workbook);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        reject(error);
+      });
+  });
+}
+
 function findStatus(userId, loginWorksheet) {
   let status = 'absent';
 
@@ -101,17 +148,8 @@ function findStatus(userId, loginWorksheet) {
   return status;
 }
 
-async function readExcel(filePath) {
-  return new Promise((resolve, reject) => {
-    const workbook = new ExcelJS.Workbook();
-    workbook.xlsx.readFile(filePath)
-      .then(() => {
-        resolve(workbook);
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
+function isTimeInRange(time, startTime, endTime) {
+  return time >= startTime && time <= endTime;
 }
 
 async function processUserDat(filePath) {
@@ -151,50 +189,4 @@ async function processUserDat(filePath) {
         });
     });
   });
-}
-
-async function processLoginDat(filePath, targetDate, startTime, endTime) {
-  return new Promise((resolve, reject) => {
-    const rawData = fs.readFileSync(filePath, 'utf-8');
-    const lines = rawData.trim().split('\n');
-
-    const loginData = [];
-
-    lines.forEach((line) => {
-      const [id, date, time] = line.trim().split(/\s+/);
-      if (date === targetDate && isTimeInRange(time, startTime, endTime)) {
-        loginData.push({ id, date, time });
-      }
-    });
-
-    if (loginData.length === 0) {
-      console.log(`No data found for the specified date ${targetDate} and time range ${startTime} to ${endTime}`);
-      resolve([]);
-      return;
-    }
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('LoginSheet');
-
-    worksheet.addRow(['ID', 'Date', 'Time']);
-
-    loginData.forEach((data) => {
-      worksheet.addRow(Object.values(data));
-      console.log(data);
-    });
-
-    workbook.xlsx.writeFile(`login.xlsx`)
-      .then(() => {
-        console.log(`Login Excel file for ${targetDate} created successfully!`);
-        resolve(loginData);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        reject(error);
-      });
-  });
-}
-
-function isTimeInRange(time, startTime, endTime) {
-  return time >= startTime && time <= endTime;
 }

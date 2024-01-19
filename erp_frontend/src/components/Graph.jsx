@@ -39,21 +39,21 @@ export const options = {
   },
 };
 
-const labels = ["Present", "Absent", "Leaves Granted"];
+const labels = ["Present", "Absent"];
 
-export const data = {
-  labels,
-  datasets: [
-    {
-      label: 'students',
-      data: [10,30,50],
-      backgroundColor: 'rgba(95, 188, 255,0.7)',
-      barThickness:60
-    }
-  ],
-};
 
-function Graph() {
+function Graph({present,absent}) {
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'students',
+        data: [present,absent],
+        backgroundColor: 'rgba(95, 188, 255,0.7)',
+        barThickness:60
+      }
+    ],
+  };
   return <div className='w-[80%] min-h-[80%] mx-auto mt-8 '>
     <Bar options={options} data={data} />
     </div>;
