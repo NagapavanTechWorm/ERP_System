@@ -13,8 +13,8 @@ function App() {
 
   async function getData() {
     try {
-      const response = await axios.get("http://localhost:3000/login-sms/");
-      const fetchedData = response.data;
+      const response = await axios.get("http://localhost:3000/user/");
+      const fetchedData = response.data.data;
       console.log(fetchedData);
       // Calculate the number of students present and absent
 
@@ -31,7 +31,7 @@ function App() {
 
   return (
     <main className="pb-20">
-      <Navbar/>
+      <Navbar setData={setData} setPresent={setPresent} />
       <Graph present={present.present} absent={present.absent}/>
       <Table setFilter={setFilter} filter={filter} data={data} setData={setData}/>  
       <div className="flex justify-center">

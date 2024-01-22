@@ -1,8 +1,6 @@
 import TeleSignSDK from 'telesignsdk';
 
 async function sendSMS(userPhoneNumber, smsMessage){
-    
-// const TeleSignSDK = require('telesignsdk');
 
 
 // Replace the defaults below with your Telesign authentication credentials or pull them from environment variables.
