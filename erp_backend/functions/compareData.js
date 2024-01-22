@@ -30,26 +30,7 @@ async function compareData(loginFilePath, targetDate, startTime, endTime) {
       }
     });
 
-    await userWorkbook.xlsx.writeFile('user_uped.xlsx');
-
-    // Fetch the modified Excel file and send SMS messages
-    const updatedUserWorkbook = await readExcel('user_uped.xlsx');
-    const updatedUserWorksheet = updatedUserWorkbook.getWorksheet('UserSheet');
-
-    // Iterate through the rows and send SMS messages
-    updatedUserWorksheet.eachRow({ includeEmpty: true }, async (row, rowNumber) => {
-      if (rowNumber > 1) { // Skip header row
-        const userPhoneNumber = row.getCell(4).value; // Assuming phone number is in column 4
-        const status = row.getCell(3).value; // Assuming status is in column 3
-        const userName = row.getCell(2).value;
-
-        if (status === 'absent') {
-          const smsMessage = `Dear ${userName}, you were absent on ${targetDate}. Please check your attendance.`;
-          await sendSMS(userPhoneNumber, smsMessage);
-        }
-      }
-    });
-
+    
     const responseData = {
       data: userData,
       message: 'Comparison data retrieved successfully',

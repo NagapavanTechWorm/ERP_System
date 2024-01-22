@@ -26,10 +26,10 @@ app.get("/user", async (req, res) => {
 });
 
 app.get("/login-sms", async (req, res) => {
-  const loginFilePath = './data/login.dat';
-  const targetDate = '03-12-2023';
-  const startTime = '20:30';
-  const endTime = '21:30';
+  const loginFilePath = './data/DailyAttendanceLogsDetails.csv';
+  const targetDate = '2024-01-22';
+  const startTime = '00:00';
+  const endTime = '01:00';
 
   try {
     const comparisonData = await compareData(loginFilePath, targetDate, startTime, endTime);
