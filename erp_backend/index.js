@@ -1,19 +1,23 @@
 import express from "express";
-import fs from 'fs';
-import readline from 'readline';
-import ExcelJS from 'exceljs';
-import cors from "cors";
+import processAllUserData from "./functions/processAllUserData.js"
+import compareData from "./functions/compareData.js";
+import { config } from 'dotenv';
+import CORSMiddleware from "./functions/Cors.js";
+import axios from 'axios';
+
+config();
 
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+app.use(express.json());
+app.use(CORSMiddleware);
 
 app.get("/user", async (req, res) => {
-  const userFilePath = './data/user.dat';
+  const userFilePath = 'user.xlsx';
 
   try {
-    const userData = await processUserDat(userFilePath);
+    const userData = await processAllUserData(userFilePath);
     res.json(userData);
   } catch (err) {
     console.error('Error processing user data:', err);
@@ -24,8 +28,8 @@ app.get("/user", async (req, res) => {
 app.get("/login-sms", async (req, res) => {
   const loginFilePath = './data/login.dat';
   const targetDate = '03-12-2023';
-  const startTime = '20:00';
-  const endTime = '22:00';
+  const startTime = '20:30';
+  const endTime = '21:30';
 
   try {
     const comparisonData = await compareData(loginFilePath, targetDate, startTime, endTime);
@@ -36,157 +40,50 @@ app.get("/login-sms", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server on PORT ${PORT}`);
+
+// app.get("/login-sms", async (req, res) => {
+//   const loginFilePath = './data/login.dat';
+
+//   // Get the current date and format it as "DD-MM-YYYY"
+//   const currentDate = new Date();
+//   const day = String(currentDate.getDate()).padStart(2, '0');
+//   const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // January is 0!
+//   const year = currentDate.getFullYear();
+//   const targetDate = `${day}-${month}-${year}`;
+
+//   const startTime = '20:00';
+//   const endTime = '22:00';
+
+//   try {
+//     const comparisonData = await compareData(loginFilePath, targetDate, startTime, endTime);
+//     res.json(comparisonData.data);
+//   } catch (err) {
+//     console.error('Error processing login data:', err);
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// });
+
+
+// New route for initial request
+app.get("/initialize-server", async (req, res) => {
+  try {
+    // Make a request to /login-sms endpoint
+    const response = await axios.get("http://localhost:3000/login-sms");
+    res.json(response.data);
+  } catch (err) {
+    console.error('Error initializing server:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-async function compareData(loginFilePath, targetDate, startTime, endTime) {
-  const userFilePath = 'user.xlsx';
-
-  return new Promise(async (resolve, reject) => {
-    try {
-      const userWorkbook = await readExcel(userFilePath);
-      const loginWorkbook = await processLoginDat(loginFilePath, targetDate, startTime, endTime);
-
-      const userWorksheet = userWorkbook.getWorksheet('UserSheet');
-      const loginWorksheet = loginWorkbook.getWorksheet('LoginSheet');
-
-      const userData = [];
-
-      userWorksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        if (rowNumber > 1) { // Skip header row
-          const userId = row.values[1];
-          const userName = row.values[2];
-          const status = findStatus(userId, loginWorksheet);
-          userData.push({ id: userId, name: userName, status });
-          userWorksheet.getCell(`C${rowNumber}`).value = status;
-        }
-      });
-
-      await userWorkbook.xlsx.writeFile('user_uped.xlsx');
-
-      const responseData = {
-        data: userData,
-        message: 'Comparison data retrieved successfully',
-      };
-
-      resolve(responseData);
-    } catch (error) {
-      console.error('Error:', error);
-      reject(error);
-    }
-  });
-}
-
-async function readExcel(filePath) {
-  return new Promise((resolve, reject) => {
-    const workbook = new ExcelJS.Workbook();
-    workbook.xlsx.readFile(filePath)
-      .then(() => {
-        resolve(workbook);
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-}
-
-async function processLoginDat(filePath, targetDate, startTime, endTime) {
-  return new Promise((resolve, reject) => {
-    const rawData = fs.readFileSync(filePath, 'utf-8');
-    const lines = rawData.trim().split('\n');
-
-    const loginData = [];
-
-    lines.forEach((line) => {
-      const [id, date, time] = line.trim().split(/\s+/);
-      if (date === targetDate && isTimeInRange(time, startTime, endTime)) {
-        loginData.push({ id, date, time });
-      }
-    });
-
-    if (loginData.length === 0) {
-      console.log(`No data found for the specified date ${targetDate} and time range ${startTime} to ${endTime}`);
-      resolve([]);
-      return;
-    }
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('LoginSheet');
-
-    worksheet.addRow(['ID', 'Date', 'Time']);
-
-    loginData.forEach((data) => {
-      worksheet.addRow(Object.values(data));
-      console.log(data);
-    });
-
-    workbook.xlsx.writeFile(`login.xlsx`)
-      .then(() => {
-        console.log(`Login Excel file for ${targetDate} created successfully!`);
-        resolve(workbook);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        reject(error);
-      });
-  });
-}
-
-function findStatus(userId, loginWorksheet) {
-  let status = 'absent';
-
-  loginWorksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-    if (rowNumber > 1) { // Skip header row
-      const loginId = row.values[1];
-      if (loginId === userId) {
-        status = 'present';
-      }
-    }
-  });
-
-  return status;
-}
-
-function isTimeInRange(time, startTime, endTime) {
-  return time >= startTime && time <= endTime;
-}
-
-async function processUserDat(filePath) {
-  return new Promise((resolve, reject) => {
-    const readInterface = readline.createInterface({
-      input: fs.createReadStream(filePath),
-    });
-
-    const userData = [];
-
-    readInterface.on('line', function (line) {
-      const match = line.match(/^(\d+)\.\s*(.*)/);
-      if (match) {
-        const [_, id, name] = match;
-        userData.push({ id, name, status: "absent" });
-      }
-    });
-
-    readInterface.on('close', function () {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('UserSheet');
-
-      worksheet.addRow(['ID', 'Name', 'Status']);
-
-      userData.forEach(({ id, name, status }, index) => {
-        worksheet.addRow([id, name, status]);
-      });
-
-      workbook.xlsx.writeFile('user.xlsx')
-        .then(() => {
-          console.log('User Excel file created successfully!');
-          resolve(userData);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          reject(error);
-        });
-    });
-  });
-}
+app.listen(PORT, async () => {
+  console.log(`Server on PORT ${PORT}`);
+  
+  // Automatically call /initialize-server when the server starts
+  try {
+    const response = await axios.get("http://localhost:3000/initialize-server");
+    console.log("Initialization response:", response.data);
+  } catch (err) {
+    console.error('Error during server initialization:', err);
+  }
+});
